@@ -1,0 +1,19 @@
+---
+robots:
+- id: 6
+  name: Patrick
+  city: Littleton
+  state: CO
+  avatar: yukl
+  birthdate: 11/01/1987
+  date_hired: 12/01/2010
+  department: Janitorial
+- id: 9
+  name: Mark
+  city: Marktown
+  state: Markville
+  avatar: 
+  birthdate: 'yes'
+  date_hired: 'yes'
+  department: 'no'
+total: 9
