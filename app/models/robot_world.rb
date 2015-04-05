@@ -1,72 +1,51 @@
-require 'yaml/store'
+require 'sequel'
 
 class RobotWorld
   def self.create(robot)
-    database.transaction do
-      database['robots'] ||= []
-      database['total'] ||= 0
-      database['total'] += 1
-      database['robots'] << {"id" => database['total'],
-                            "name" => robot[:name],
-                            "city" => robot[:city],
-                            "state" => robot[:state],
-                            "avatar" => robot[:avatar],
-                            "birthdate" => robot[:birthdate],
-                            "date_hired" => robot[:date_hired],
-                            "department" => robot[:department] }
-    end
-  end
-
-  def self.raw_robots
-    database.transaction do
-      database['robots'] || []
-    end
+    data = { name: robot[:name],
+             city: robot[:city],
+             state: robot[:state],
+             avatar: robot[:avatar],
+             birthdate: "#{robot[:dobyear]}-#{robot[:dobmonth]}-#{robot[:dobday]}",
+             date_hired: robot[:date_hired],
+             department: robot[:department] }
+    database.from(:robots).insert(data)
   end
 
   def self.all
-    raw_robots.map {|data| Robot.new(data)}
-  end
-
-  def self.raw_robot(id)
-    raw_robots.find {|robot| robot["id"] == id}
+    database[:robots].map do |hash|
+      Robot.new(hash)
+    end
   end
 
   def self.find(id)
-    Robot.new(raw_robot(id))
+    raw_robot = database[:robots].find(id)
+    Robot.new(raw_robot)
   end
 
   def self.update(id, data)
-    database.transaction do
-      target = database['robots'].find { |robot| robot["id"] == id}
-      target["name"] = data[:name]
-      target["city"] = data[:city]
-      target["state"] = data[:state]
-      target["avatar"] = data[:avatar]
-      target["birthdate"] = data[:birthdate]
-      target["date_hired"] = data[:date_hired]
-      target["department"] = data[:department]
-    end
+    database[:robots].where(id: id).update(data)
   end
 
   def self.destroy(id)
-    database.transaction do
-      database['robots'].delete_if{ |robot| robot["id"] == id}
-    end
+    database[:robots].where(id: id).delete
   end
 
   def self.database
     if ENV["ROBOT_WORLD_ENV"] == 'test'
-      @database ||= YAML::Store.new("../../db/robot_world_test")
+      @database ||= Sequel.sqlite("../../db/robot_world_test.sqlite3")
     else
-      @database ||= YAML::Store.new("db/robot_world")
+      @database ||= Sequel.sqlite("db/robot_world_development.sqlite3")
     end
   end
 
   def self.delete_all
-    database.transaction do
-      database['robots'] = []
-      database['total'] = 0
-    end
+    database[:robots].delete
+  end
+
+  def self.average_age
+    avg = Time.now.year - database[:robots].avg(:birthdate)
+    avg.to_i
   end
 
 end
